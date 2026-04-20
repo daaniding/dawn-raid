@@ -1,8 +1,8 @@
 "use client";
 
 import ChestItem from "@/components/kist/ChestItem";
+import ChestSprite from "@/components/kist/ChestSprite";
 import ExplosionParticles from "@/components/kist/ExplosionParticles";
-import Smith from "@/components/kist/Smith";
 import TapParticle from "@/components/kist/TapParticle";
 import {
   CastleIcon,
@@ -121,7 +121,14 @@ function KistView() {
   const [row, setRow] = useState(chest.closedRow);
   const [shakeKey, setShakeKey] = useState(0);
   const [bigShake, setBigShake] = useState(false);
-  const [smithAttacking, setSmithAttacking] = useState(false);
+
+  // Size-scale for chest (kept in a Map so spring transition is simple)
+  const SIZE_SCALE: Record<ChestSize, number> = {
+    small: 1.0,
+    medium: 1.5,
+    large: 2.0,
+    mega: 2.6,
+  };
   const [flashLayers, setFlashLayers] = useState(0);
   const [flashKey, setFlashKey] = useState(0);
   const [screenShaking, setScreenShaking] = useState(false);
@@ -286,12 +293,11 @@ function KistView() {
 
   const handleTap = () => {
     if (phase !== "idle" && phase !== "tapping") return;
-    if (smithAttacking) return;
     if (phase === "idle") {
       setPhase("tapping");
       setShowTapPrompt(false);
     }
-    setSmithAttacking(true);
+    setShakeKey((k) => k + 1);
     const next = tapCount + 1;
     setTapCount(next);
 
@@ -466,7 +472,7 @@ function KistView() {
       <div
         style={{
           position: "fixed",
-          top: "48%",
+          top: "45%",
           left: "50%",
           transform: "translate(-50%, -50%)",
           display: "flex",
@@ -480,26 +486,27 @@ function KistView() {
           padding: "0 12px",
         }}
       >
-        {/* Smith with chest-on-anvil + relative-positioned overlays */}
+        {/* Chest centered, scaled by chestSize */}
         <div
+          ref={chestStageRef}
           style={{
             position: "relative",
             pointerEvents: "auto",
             overflow: "visible",
+            transform: `scale(${SIZE_SCALE[chestSize]})`,
+            transformOrigin: "center center",
+            transition:
+              "transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1)",
           }}
         >
-          <Smith
-            chestType={typeParam}
-            chestSize={chestSize}
-            chestFrame={col}
-            chestRow={row}
-            isAttacking={smithAttacking}
-            onAttackComplete={() => setSmithAttacking(false)}
-            onHammerImpact={() => setShakeKey((k) => k + 1)}
-            chestShakeKey={shakeKey}
-            chestRef={(el) => {
-              chestStageRef.current = el;
-            }}
+          <ChestSprite
+            src={sheet}
+            row={row}
+            col={col}
+            glowColor={`rgba(${chest.rgb}, 0.8)`}
+            progress={progress}
+            shakeKey={shakeKey}
+            bigShake={bigShake}
           />
           <TapParticle color={chest.accent} burstKey={shakeKey} />
           <ExplosionParticles
