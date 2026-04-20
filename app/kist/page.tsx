@@ -483,19 +483,14 @@ function KistView() {
         {/* Smith with chest-on-anvil + relative-positioned overlays */}
         <div style={{ position: "relative", pointerEvents: "auto" }}>
           <Smith
+            chestType={typeParam}
+            chestSize={chestSize}
+            chestFrame={col}
+            chestRow={row}
             isAttacking={smithAttacking}
             onAttackComplete={() => setSmithAttacking(false)}
             onHammerImpact={() => setShakeKey((k) => k + 1)}
-            scale={4}
-            chestSrc={sheet}
-            chestType={typeParam}
-            chestSize={chestSize}
-            chestRow={row}
-            chestCol={col}
             chestShakeKey={shakeKey}
-            chestBigShake={bigShake}
-            chestGlowRGB={chest.rgb}
-            chestProgress={progress}
             chestRef={(el) => {
               chestStageRef.current = el;
             }}
