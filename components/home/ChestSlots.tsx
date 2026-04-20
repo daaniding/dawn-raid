@@ -14,8 +14,6 @@ type SlotProps = {
   badge?: string;
 };
 
-const SPRITE_WRAPPER_HEIGHT = 72;
-
 function Slot({ children, ready, glow, onClick, badge }: SlotProps) {
   return (
     <div
@@ -24,17 +22,22 @@ function Slot({ children, ready, glow, onClick, badge }: SlotProps) {
     >
       <div
         onClick={onClick}
-        className={`flex flex-col items-center${ready ? " chest-ready" : ""}`}
+        className={`${ready ? "chest-ready" : ""}`}
         style={{
-          width: "100%",
-          padding: "8px 4px",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: 8,
           gap: 4,
+          width: "100%",
+          height: "100%",
+          minHeight: 130,
           background: "rgba(45, 26, 0, 0.8)",
           border: "1.5px solid var(--gold-dark)",
           borderRadius: 10,
           boxShadow: glow,
           cursor: onClick ? "pointer" : "default",
-          justifyContent: "flex-start",
         }}
       >
         {children}
@@ -102,21 +105,19 @@ export default function ChestSlots({
       >
         SCHATKAMER
       </span>
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-stretch">
         {/* Slot 1: timer running (bronze) */}
         <Slot glow="0 0 8px rgba(255, 179, 71, 0.3)">
           <div
-            className="flex items-center justify-center"
             style={{
-              width: "100%",
-              height: SPRITE_WRAPPER_HEIGHT,
-              overflow: "hidden",
+              display: "block",
+              margin: "0 auto",
+              width: 144,
+              height: 96,
               filter: "brightness(1.3)",
             }}
           >
-            <div style={{ margin: "0 auto", transform: "scale(0.7)" }}>
-              <ChestSlotSprite type="bronze" animated scale={3} />
-            </div>
+            <ChestSlotSprite type="bronze" animated scale={3} />
           </div>
           <span
             className="font-cinzel tabular-nums"
@@ -139,17 +140,16 @@ export default function ChestSlots({
           onClick={() => router.push("/kist?type=silver")}
         >
           <div
-            className="flex items-center justify-center"
             style={{
-              width: "100%",
-              height: SPRITE_WRAPPER_HEIGHT,
-              overflow: "hidden",
+              display: "block",
+              margin: "0 auto",
+              width: 144,
+              height: 96,
+              filter: "brightness(1.3)",
               animation: "chest-shine 2s ease-in-out infinite",
             }}
           >
-            <div style={{ margin: "0 auto", transform: "scale(0.7)" }}>
-              <ChestSlotSprite type="silver" animated isReady scale={3} />
-            </div>
+            <ChestSlotSprite type="silver" animated isReady scale={3} />
           </div>
           <span
             className="font-cinzel"

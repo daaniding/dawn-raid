@@ -190,9 +190,9 @@ function KistView() {
     const maxH = window.innerHeight * 0.42;
     const max = Math.min(maxW / 288, maxH / 192);
     scaleRef.current = {
-      small: max * 0.32,
-      medium: max * 0.52,
-      large: max * 0.72,
+      small: max * 0.45,
+      medium: max * 0.65,
+      large: max * 0.82,
       mega: max * 1.0,
     };
     setScaleReady(true);
@@ -418,6 +418,17 @@ function KistView() {
           phase === "idle" || phase === "tapping" ? "pointer" : "default",
       }}
     >
+      {/* Ambient warm base glow, always visible */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 70% 50% at 50% 55%, rgba(255, 179, 71, 0.10) 0%, transparent 70%)",
+          zIndex: 0,
+        }}
+      />
+
       {/* Dynamic glow overlay tied to size */}
       <div
         aria-hidden
@@ -510,21 +521,36 @@ function KistView() {
         <div style={{ width: "25%" }} />
       </div>
 
-      {/* Middle zone — flex column, centered between top (56) and bottom (80) */}
-      <main
-        className="relative z-10 flex flex-col items-center justify-center px-4"
-        style={{ height: "calc(100vh - 56px - 80px)" }}
+      {/* Fixed-centered stage: smith + chest row with prompt/items/continue stacked */}
+      <div
+        className="px-4"
+        style={{
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 16,
+          zIndex: 10,
+          width: "100%",
+          maxWidth: 430,
+          pointerEvents: "none",
+        }}
       >
         {/* Smith + chest row, bottom-aligned */}
         <div
-          className="flex flex-row items-end justify-center"
-          style={{ gap: 24, width: "100%" }}
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "flex-end",
+            justifyContent: "center",
+            gap: 32,
+          }}
         >
           {(phase === "idle" || phase === "tapping") && (
-            <div
-              className="shrink-0"
-              style={{ pointerEvents: "none", alignSelf: "flex-end" }}
-            >
+            <div style={{ alignSelf: "flex-end" }}>
               <Smith
                 isAttacking={smithAttacking}
                 onAttackComplete={() => setSmithAttacking(false)}
@@ -537,8 +563,8 @@ function KistView() {
           {/* Chest stage */}
           <div
             ref={chestStageRef}
-            className="relative shrink-0"
-            style={{ width: 288, height: 192 }}
+            className="relative"
+            style={{ width: 288, height: 192, pointerEvents: "auto" }}
           >
           {popup && (
             <span
@@ -774,16 +800,14 @@ function KistView() {
               boxShadow:
                 "0 6px 0 #8B2500, 0 8px 20px rgba(192, 57, 43, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2)",
               cursor: "pointer",
+              pointerEvents: "auto",
               animation: "slide-up 300ms ease-out both",
             }}
           >
             DOORGAAN
           </button>
         )}
-      </main>
-
-      {/* Bottom reserved zone (80px) */}
-      <div style={{ height: 80 }} />
+      </div>
 
       {flashLayers > 0 &&
         Array.from({ length: flashLayers }).map((_, i) => (
