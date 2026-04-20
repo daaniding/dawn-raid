@@ -32,6 +32,49 @@ function fmt(sec: number) {
   return `${pad(m)}:${pad(s)}`;
 }
 
+function urlBase64ToUint8Array(base64: string): Uint8Array {
+  const padding = "=".repeat((4 - (base64.length % 4)) % 4);
+  const b64 = (base64 + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const raw = atob(b64);
+  const arr = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+
+async function ensurePushSubscription(userId: string) {
+  try {
+    if (typeof window === "undefined") return;
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return;
+    const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    if (!vapid) return;
+
+    const reg =
+      (await navigator.serviceWorker.getRegistration("/sw.js")) ||
+      (await navigator.serviceWorker.register("/sw.js"));
+
+    // Ask permission only if not previously denied; don't block UI on denial
+    let perm = Notification.permission;
+    if (perm === "default") perm = await Notification.requestPermission();
+    if (perm !== "granted") return;
+
+    const existing = await reg.pushManager.getSubscription();
+    const sub =
+      existing ??
+      (await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapid),
+      }));
+
+    await fetch("/api/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, subscription: sub.toJSON() }),
+    });
+  } catch {
+    // Swallow: push is best-effort
+  }
+}
+
 const PARTICLES = Array.from({ length: 10 }, (_, i) => ({
   size: 3 + ((i * 7) % 4),
   left: (i * 53) % 100,
@@ -67,7 +110,11 @@ function TimerView() {
   const [showConfirm, setShowConfirm] = useState(false);
   const userIdRef = useRef<string>("");
 
-  // Persist userId client-side + POST timer on mount
+  // Keep latest timeLeft in a ref so visibility handler reads fresh value
+  const timeLeftRef = useRef(duration);
+  timeLeftRef.current = timeLeft;
+
+  // Persist userId + POST timer + register SW + subscribe to push on mount
   useEffect(() => {
     const userId = getOrCreateUserId();
     userIdRef.current = userId;
@@ -80,21 +127,22 @@ function TimerView() {
         duration,
         name,
       }),
-    }).catch(() => {
-      // Non-blocking: UI continues even if Redis write fails
-    });
+    }).catch(() => {});
+
+    void ensurePushSubscription(userId);
   }, [duration, name]);
 
-  const patchStatus = (status: "running" | "paused" | "completed") => {
+  const patchStatus = (
+    status: "running" | "paused" | "completed",
+    extra?: { timeLeft?: number },
+  ) => {
     const userId = userIdRef.current;
     if (!userId) return;
     fetch("/api/timer", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, status }),
-    }).catch(() => {
-      // Non-blocking
-    });
+      body: JSON.stringify({ userId, status, ...extra }),
+    }).catch(() => {});
   };
 
   const playSuccessSound = () => {
@@ -163,7 +211,7 @@ function TimerView() {
       if (document.hidden) {
         setIsRunning(false);
         setIsPaused(true);
-        patchStatus("paused");
+        patchStatus("paused", { timeLeft: timeLeftRef.current });
       } else {
         setIsRunning(true);
         setIsPaused(false);
@@ -274,7 +322,8 @@ function TimerView() {
           style={{
             width: 280,
             height: 280,
-            filter: "drop-shadow(0 0 8px rgba(255, 215, 0, 0.6))",
+            filter:
+              "drop-shadow(0 0 12px rgba(255,179,71,0.8)) drop-shadow(0 0 6px rgba(255,179,71,0.4))",
           }}
         >
           <svg width="280" height="280" viewBox="0 0 280 280">
@@ -292,16 +341,17 @@ function TimerView() {
               cy="140"
               r={R}
               fill="none"
-              stroke="#FFD700"
+              stroke="#FFB347"
               strokeWidth={isCompleted ? 12 : 8}
               strokeLinecap="round"
               strokeDasharray={C}
               strokeDashoffset={dashOffset}
               transform="rotate(-90 140 140)"
               style={{
-                transition: "stroke-dashoffset 1s linear, stroke-width 0.4s ease",
+                transition:
+                  "stroke-dashoffset 1s linear, stroke-width 0.4s ease",
                 filter: isCompleted
-                  ? "drop-shadow(0 0 22px rgba(255,215,0,0.95))"
+                  ? "drop-shadow(0 0 22px rgba(255,179,71,0.95))"
                   : undefined,
               }}
             />
@@ -319,8 +369,9 @@ function TimerView() {
                 fontSize: 64,
                 fontWeight: 700,
                 letterSpacing: "4px",
-                color: "#FFF5E4",
+                color: "#FFE4B5",
                 lineHeight: 1,
+                textShadow: "0 0 20px rgba(255, 179, 71, 0.3)",
               }}
             >
               {fmt(timeLeft)}
@@ -379,39 +430,64 @@ function TimerView() {
 
       {/* Bottom bar — reward */}
       <div
-        className="relative z-10 flex items-center justify-between"
+        className="relative z-10 grid items-stretch"
         style={{
-          padding: "14px 16px",
-          background: "rgba(45, 26, 0, 0.8)",
-          borderTop: "1px solid #B8860B",
+          gridTemplateColumns: "1fr 1px 1fr",
+          minHeight: 90,
+          padding: "16px 20px",
+          paddingBottom: "max(16px, env(safe-area-inset-bottom))",
+          background:
+            "linear-gradient(180deg, rgba(45, 26, 0, 0.95) 0%, rgba(13, 6, 0, 0.98) 100%)",
+          borderTop: "2px solid #FFB347",
+          columnGap: 16,
         }}
       >
-        <div className="flex items-center gap-2.5">
-          <div className="flex flex-col" style={{ gap: 2 }}>
+        {/* Left column — reward */}
+        <div className="flex flex-col justify-center" style={{ gap: 6 }}>
+          <span
+            className="font-cinzel"
+            style={{
+              fontSize: 10,
+              letterSpacing: "3px",
+              color: "#C4A882",
+            }}
+          >
+            BELONING
+          </span>
+          <span className="flex items-center gap-2">
+            <span style={{ color: "#FFB347", lineHeight: 0 }}>
+              <ChestIcon size={24} />
+            </span>
             <span
               className="font-cinzel"
-              style={{
-                fontSize: 10,
-                letterSpacing: "3px",
-                color: "#C4A882",
-              }}
+              style={{ fontSize: 16, fontWeight: 700, color: "#FFD700" }}
             >
-              BELONING
+              {reward.label}
             </span>
-            <span className="flex items-center gap-1.5">
-              <span style={{ color: "#FFD700", lineHeight: 0 }}>
-                <ChestIcon size={22} />
-              </span>
-              <span
-                className="font-cinzel"
-                style={{ fontSize: 14, fontWeight: 700, color: "#FFF5E4" }}
-              >
-                {reward.label}
-              </span>
-            </span>
-          </div>
+          </span>
+          <span
+            className="font-nunito"
+            style={{ fontSize: 11, color: "#C4A882" }}
+          >
+            Na voltooiing
+          </span>
         </div>
-        <div className="flex flex-col items-end" style={{ gap: 2 }}>
+
+        {/* Vertical divider */}
+        <div
+          aria-hidden
+          style={{
+            width: 1,
+            alignSelf: "stretch",
+            background: "rgba(255, 179, 71, 0.2)",
+          }}
+        />
+
+        {/* Right column — coins */}
+        <div
+          className="flex flex-col items-end justify-center"
+          style={{ gap: 6 }}
+        >
           <span
             className="font-cinzel"
             style={{
@@ -422,16 +498,22 @@ function TimerView() {
           >
             COINS
           </span>
-          <span className="flex items-center gap-1.5">
+          <span className="flex items-center gap-2">
             <span style={{ color: "#FFD700", lineHeight: 0 }}>
-              <CoinsIcon size={20} />
+              <CoinsIcon size={24} />
             </span>
             <span
               className="font-cinzel tabular-nums"
-              style={{ fontSize: 16, fontWeight: 700, color: "#FFD700" }}
+              style={{ fontSize: 24, fontWeight: 700, color: "#FFD700" }}
             >
               {rewardCoins}
             </span>
+          </span>
+          <span
+            className="font-nunito"
+            style={{ fontSize: 11, color: "#C4A882" }}
+          >
+            +bonus bij streak
           </span>
         </div>
       </div>

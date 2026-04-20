@@ -5,6 +5,14 @@ import {
   type TimerRecord,
   type TimerStatus,
 } from "@/lib/redis";
+import { sendPush } from "@/lib/webpush";
+
+function fmtRemaining(sec: number): string {
+  const s = Math.max(0, Math.floor(sec));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${m}:${r.toString().padStart(2, "0")}`;
+}
 
 const VALID_STATUSES: TimerStatus[] = ["running", "paused", "completed"];
 
@@ -56,7 +64,7 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
-  let body: { userId?: string; status?: TimerStatus };
+  let body: { userId?: string; status?: TimerStatus; timeLeft?: number };
   try {
     body = await req.json();
   } catch {
@@ -65,7 +73,7 @@ export async function PATCH(req: Request) {
       { status: 400 },
     );
   }
-  const { userId, status } = body;
+  const { userId, status, timeLeft } = body;
   if (!userId || !status || !VALID_STATUSES.includes(status)) {
     return NextResponse.json(
       { success: false, error: "bad request" },
@@ -85,5 +93,17 @@ export async function PATCH(req: Request) {
     updatedAt: Date.now(),
   };
   await redis.set(timerKey(userId), updated, { ex: 60 * 60 * 24 });
+
+  // Fire-and-forget push notification when user leaves the app mid-run
+  if (status === "paused" && typeof timeLeft === "number" && timeLeft > 0) {
+    const remaining = fmtRemaining(timeLeft);
+    sendPush(userId, {
+      title: "Dawn Raid gepauzeerd",
+      body: `Je had nog ${remaining} te gaan. Tik om verder te gaan!`,
+      url: "/timer",
+      tag: "dawnraid-timer",
+    }).catch(() => {});
+  }
+
   return NextResponse.json({ success: true });
 }
