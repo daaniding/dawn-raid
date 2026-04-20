@@ -151,11 +151,25 @@ function KistView() {
     open: number;
   } | null>(null);
   if (!thresholdsRef.current) {
-    const openAt = Math.floor(Math.random() * 27) + 4; // 4..30
+    const tierRoll = Math.random();
+    let openAt: number;
+    if (tierRoll < 0.70) {
+      // Small: 70% — openAt 3..10
+      openAt = Math.floor(Math.random() * 8) + 3;
+    } else if (tierRoll < 0.88) {
+      // Medium: 18% — openAt 14..19
+      openAt = Math.floor(Math.random() * 6) + 14;
+    } else if (tierRoll < 0.97) {
+      // Large: 9% — openAt 22..26
+      openAt = Math.floor(Math.random() * 5) + 22;
+    } else {
+      // Mega: 3% — openAt 28..31
+      openAt = Math.floor(Math.random() * 4) + 28;
+    }
     thresholdsRef.current = {
-      medium: openAt > 18 ? Math.floor(Math.random() * 4) + 14 : null, // 14..17
-      large: openAt > 24 ? Math.floor(Math.random() * 4) + 20 : null, // 20..23
-      mega: openAt > 28 ? Math.floor(Math.random() * 3) + 25 : null, // 25..27
+      medium: openAt >= 14 ? Math.floor(openAt * 0.55) : null,
+      large: openAt >= 22 ? Math.floor(openAt * 0.72) : null,
+      mega: openAt >= 28 ? Math.floor(openAt * 0.88) : null,
       open: openAt,
     };
   }
@@ -543,7 +557,9 @@ function KistView() {
 
           <div
             style={{
+              position: "relative",
               transform: `scale(${scaleReady ? scaleRef.current[chestSize] : 0.5})`,
+              transformOrigin: "center center",
               transition:
                 "transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1)",
               visibility: scaleReady ? "visible" : "hidden",
