@@ -27,7 +27,7 @@ function Slot({ children, ready, glow, onClick, badge }: SlotProps) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          padding: "8px 4px",
+          padding: 8,
           gap: 4,
           overflow: "hidden",
           background: "rgba(45, 26, 0, 0.8)",
@@ -90,19 +90,7 @@ export default function ChestSlots() {
       <div className="flex gap-2 items-stretch">
         {/* Slot 1: timer running (bronze) */}
         <Slot glow="0 0 8px rgba(255, 179, 71, 0.3)">
-          <div
-            style={{
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              height: 80,
-              overflow: "hidden",
-              filter: "brightness(1.3)",
-            }}
-          >
-            <ChestSlotSprite type="bronze" animated />
-          </div>
+          <ChestSlotSprite type="bronze" animated />
           <span
             className="font-cinzel tabular-nums"
             style={{
@@ -117,26 +105,13 @@ export default function ChestSlots() {
           </span>
         </Slot>
 
-        {/* Slot 2: ready (silver) with shine */}
+        {/* Slot 2: ready to open (silver) */}
         <Slot
           ready
           badge="NIEUW"
           onClick={() => router.push("/kist?type=silver")}
         >
-          <div
-            style={{
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              height: 80,
-              overflow: "hidden",
-              filter: "brightness(1.3)",
-              animation: "chest-shine 2s ease-in-out infinite",
-            }}
-          >
-            <ChestSlotSprite type="silver" animated isReady />
-          </div>
+          <ChestSlotSprite type="silver" animated isReady />
           <span
             className="font-cinzel"
             style={{
