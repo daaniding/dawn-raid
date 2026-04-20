@@ -1,4 +1,5 @@
 import BackgroundParticles from "@/components/home/BackgroundParticles";
+import ChestSlots from "@/components/home/ChestSlots";
 import FloatingButtons from "@/components/home/FloatingButtons";
 import Header from "@/components/home/Header";
 import QuestCard from "@/components/home/QuestCard";
@@ -46,6 +47,7 @@ export default function Home() {
         </main>
 
         <NpcParade />
+        <ChestSlots />
         <FloatingButtons />
         <TabBar />
       </div>

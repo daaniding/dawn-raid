@@ -106,15 +106,20 @@ html, body {
   50%      { transform: translateY(-10px); }
 }
 
-/* NPC parade — right to left */
-@keyframes parade {
+/* NPC parade */
+@keyframes parade-rtl {
   from { transform: translateX(calc(100vw + 150px)); }
   to   { transform: translateX(-150px); }
+}
+@keyframes parade-ltr {
+  from { transform: translateX(-150px) scaleX(-1); }
+  to   { transform: translateX(calc(100vw + 150px)) scaleX(-1); }
 }
 @keyframes walk-cycle {
   from { background-position: 0 0; }
   to   { background-position: -384px 0; }
 }
+
 .parade-npc {
   position: absolute;
   bottom: 0;
@@ -125,10 +130,33 @@ html, body {
   image-rendering: pixelated;
   filter: drop-shadow(0 0 6px rgba(255, 179, 71, 0.3));
   animation:
-    parade 12s linear infinite both,
+    parade-rtl 12s linear infinite both,
     walk-cycle 0.6s steps(4) infinite;
   will-change: transform, background-position;
 }
+.parade-npc.ltr {
+  animation-name: parade-ltr, walk-cycle;
+}
+
+/* Chest slot: red pulse when ready-to-open */
+@keyframes chest-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 10px rgba(231, 76, 60, 0.45), inset 0 0 0 1px rgba(231, 76, 60, 0.2);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 0 18px rgba(231, 76, 60, 0.75), inset 0 0 0 1px rgba(231, 76, 60, 0.45);
+  }
+}
+.chest-ready { animation: chest-pulse 1.4s ease-in-out infinite; }
+
+/* Chest icon shimmer */
+@keyframes chest-shimmer {
+  0%, 100% { filter: drop-shadow(0 0 2px rgba(255, 215, 0, 0.3)); }
+  50%      { filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.9)); }
+}
+.chest-shimmer { animation: chest-shimmer 1.6s ease-in-out infinite; }
 
 /* Tab active dot */
 .tab-dot {
