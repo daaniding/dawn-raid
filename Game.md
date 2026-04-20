@@ -1,8 +1,8 @@
-# dawn raid - Game Design Document
+# Dawn Raid - Game Design Document
 
-## Wat is Realm?
+## Wat is Dawn Raid?
 
-Realm is een mobiele productiviteitsapp met een echte game-laag. 
+Dawn Raid is een mobiele productiviteitsapp met een echte game-laag. 
 Je krijgt elke dag een opdracht met een timer. Die timer loopt 
 alleen als je in de app bent. Ga je weg, stopt de timer. 
 Voltooi je de opdracht? Je krijgt een kist. In die kist zitten 
@@ -12,7 +12,7 @@ je offline bent.
 
 ## De elevator pitch
 
-"Realm is de enige game waar je écht iets moet verdienen 
+"Dawn Raid is de enige game waar je écht iets moet verdienen 
 voordat je kan spelen. Doe je dagelijkse opdracht, open je 
 kist, en val andere dorpen aan met je helden."
 
@@ -21,13 +21,13 @@ kist, en val andere dorpen aan met je helden."
 Geen enkele andere game koppelt echte focus-tijd aan 
 game-progressie. Forest laat een boom groeien maar je 
 kan er niks mee. Clash Royale geeft je alles gratis. 
-Realm combineert de twee: je moet echt iets doen in het 
+Dawn Raid combineert de twee: je moet echt iets doen in het 
 echte leven om vooruit te komen in de game. Dat is de USP. 
-Dat is wat Realm anders maakt dan alles wat er al is.
+Dat is wat Dawn Raid anders maakt dan alles wat er al is.
 
 ## De core game loop
 
-1. Speler opent Realm. Ziet zijn dorp. Ziet dagelijkse opdracht.
+1. Speler opent Dawn Raid. Ziet zijn dorp. Ziet dagelijkse opdracht.
 2. Speler start opdracht. Timer loopt fullscreen. 
    Als speler de app verlaat: timer stopt automatisch. 
    Speler moet terugkomen en doorgaan. Timer hervat waar 
@@ -43,7 +43,7 @@ Dat is wat Realm anders maakt dan alles wat er al is.
 
 ## De timer
 
-Dit is de kern van Realm. De timer werkt als volgt:
+Dit is de kern van Dawn Raid. De timer werkt als volgt:
 
 - Fullscreen als hij loopt
 - Detecteert als je de app verlaat (app goes to background)
@@ -172,7 +172,7 @@ Positie bepaalt rol in het gevecht:
 - Middelste rij: balanced aanval en verdediging  
 - Achterste rij: veilig maar minder effectief
 
-Goede formaties leren is de skill-curve van Realm. 
+Goede formaties leren is de skill-curve van Dawn Raid. 
 Spelers die dit begrijpen winnen van sterkere dorpen. 
 Spelers die random plaatsen verliezen van zwakkere dorpen.
 
@@ -207,7 +207,7 @@ met animatie.
 
 - Video-advertentie bij start van elke timer-sessie
 - Video-advertentie halverwege 60-min sessies
-- Realm Plus (3,99/maand): geen ads, 2x coins, 
+- Dawn Raid Plus (3,99/maand): geen ads, 2x coins, 
   cosmetische extras
 - Seizoens-battle-pass (5,99): extra kaarten, 
   dorp-thema's, exclusieve helden-skins
@@ -278,7 +278,7 @@ gevecht animaties, uitkomst berekening.
 
 - Seizoens-switch (v2)
 - Battle-pass (v2)
-- Realm Plus abonnement (v2)  
+- Dawn Raid Plus abonnement (v2)  
 - Push notifications (v2)
 - Leaderboards (v2)
 - Held-synergieën visueel zichtbaar (v2)
@@ -286,7 +286,7 @@ gevecht animaties, uitkomst berekening.
 
 ## Naam
 
-**Realm**
+**Dawn Raid**
 
 Kort, sterk, past bij het concept. 
-Domeinnaam checken: realm.app of realmgame.app
+Domeinnaam checken: dawnraid.app of dawn-raid.app

@@ -1,4 +1,4 @@
-# dawn raid - Claude instructies
+# Dawn Raid - Claude instructies
 
 ## Stack
 - Next.js App Router, TypeScript
