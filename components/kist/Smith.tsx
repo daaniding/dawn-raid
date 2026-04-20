@@ -39,11 +39,19 @@ const CHEST_ROW: Record<ChestType, number> = {
 };
 
 const CHEST_SCALE: Record<ChestSize, number> = {
-  small: 1.8,
-  medium: 2.4,
-  large: 3.2,
-  mega: 4.2,
+  small: 2.0,
+  medium: 2.8,
+  large: 3.6,
+  mega: 4.5,
 };
+
+// Anvil is in bottom-right of each 32×32 frame, roughly x=18-30, y=22-32.
+// At scale 4 that's 48px wide × 40px tall, starting at left=72px, bottom=0.
+// Center of anvil = 75% of smith width.
+const ANVIL_LEFT = 72;
+const ANVIL_WIDTH = 48;
+const ANVIL_HEIGHT = 40;
+const ANVIL_CENTER = "75%";
 
 export default function Smith({
   isAttacking,
@@ -123,6 +131,22 @@ export default function Smith({
         }}
       />
 
+      {/* Cover the anvil so it sits behind the chest */}
+      {showChest && (
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            bottom: 0,
+            left: ANVIL_LEFT,
+            width: ANVIL_WIDTH,
+            height: ANVIL_HEIGHT,
+            background: "#0d0600",
+            zIndex: 2,
+          }}
+        />
+      )}
+
       {/* Chest sitting on the anvil */}
       {showChest && (
         <div
@@ -130,12 +154,12 @@ export default function Smith({
           style={{
             position: "absolute",
             bottom: 0,
-            left: "60%",
+            left: ANVIL_CENTER,
             transform: `translateX(-50%) scale(${chestScale})`,
             transformOrigin: "center bottom",
             transition:
               "transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1)",
-            zIndex: 2,
+            zIndex: 3,
           }}
         >
           <div
