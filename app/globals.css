@@ -169,6 +169,77 @@ html, body {
   will-change: transform;
 }
 
+/* Chest opening animations */
+@keyframes chest-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 var(--chest-base-glow) var(--chest-glow-color));
+  }
+  50% {
+    filter: drop-shadow(0 0 var(--chest-max-glow) var(--chest-glow-color));
+  }
+}
+@keyframes tap-shake {
+  0%   { transform: translateX(0) scale(1); }
+  25%  { transform: translateX(-6px) scale(1.04); }
+  50%  { transform: translateX(6px) scale(1.04); }
+  75%  { transform: translateX(-3px) scale(1.02); }
+  100% { transform: translateX(0) scale(1); }
+}
+@keyframes big-shake {
+  0%   { transform: translateX(0) scale(1); }
+  15%  { transform: translateX(-12px) scale(1.06); }
+  30%  { transform: translateX(12px) scale(1.06); }
+  45%  { transform: translateX(-8px) scale(1.03); }
+  60%  { transform: translateX(8px) scale(1.03); }
+  75%  { transform: translateX(-4px) scale(1.01); }
+  100% { transform: translateX(0) scale(1); }
+}
+@keyframes tap-pulse {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+@keyframes arrow-bounce {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-6px); }
+}
+@keyframes last-tap {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.1); }
+}
+@keyframes tap-burst {
+  0%   { transform: translate(-50%, -50%) translate(0, 0); opacity: 1; }
+  100% {
+    transform: translate(-50%, -50%)
+      translate(var(--pb-dx), var(--pb-dy));
+    opacity: 0;
+  }
+}
+@keyframes steam-pulse {
+  0%, 100% { opacity: 0; transform: translateY(0); }
+  50%      { opacity: 0.6; transform: translateY(-10px); }
+}
+@keyframes flash-overlay {
+  0%   { opacity: 0; }
+  25%  { opacity: 0.8; }
+  100% { opacity: 0; }
+}
+@keyframes explode {
+  0%   { transform: translate(-50%, -50%) translate(0, 0); opacity: 1; }
+  100% {
+    transform: translate(-50%, -50%)
+      translate(var(--ex-dx), var(--ex-dy)) scale(0.6);
+    opacity: 0;
+  }
+}
+@keyframes slide-up {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: translateY(0); opacity: 1; }
+}
+@keyframes legendary-shimmer {
+  0%, 100% { box-shadow: 0 0 14px rgba(255, 215, 0, 0.6); }
+  50%      { box-shadow: 0 0 22px rgba(255, 215, 0, 0.95), inset 0 0 10px rgba(255, 215, 0, 0.4); }
+}
+
 /* Timer bottom-bar coin shimmer */
 @keyframes coin-shimmer-bright {
   0%, 100% { color: #FFD700; text-shadow: 0 0 0 transparent; }

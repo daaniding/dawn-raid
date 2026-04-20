@@ -176,8 +176,12 @@ function TimerView() {
     setIsCompleted(true);
     playSuccessSound();
     patchStatus("completed");
+    // Map timer duration to chest tier
+    const mins = Math.round(duration / 60);
+    const chestType =
+      mins >= 60 ? "epic" : mins >= 30 ? "silver" : "bronze";
     setTimeout(() => {
-      router.push("/kist");
+      router.push(`/kist?type=${chestType}`);
     }, 2000);
   };
 
