@@ -120,18 +120,14 @@ function KistView() {
   const [shakeKey, setShakeKey] = useState(0);
   const [bigShake, setBigShake] = useState(false);
 
-  const [scale, setScale] = useState(1.0);
-  const startScaleRef = useRef(1.0);
-  const maxScaleRef = useRef(2.0);
+  const [zoom, setZoom] = useState(1.0);
   useEffect(() => {
-    const beschikbaareBredte = window.innerWidth * 0.8;
-    const beschikbaareHoogte = window.innerHeight * 0.45;
-    const maxScaleX = beschikbaareBredte / 400;
-    const maxScaleY = beschikbaareHoogte / 192;
-    const max = Math.min(maxScaleX, maxScaleY);
-    startScaleRef.current = max * 0.6;
-    maxScaleRef.current = max;
-    setScale(max * 0.6);
+    (document.body.style as unknown as { zoom: string }).zoom = String(zoom);
+  }, [zoom]);
+  useEffect(() => {
+    return () => {
+      (document.body.style as unknown as { zoom: string }).zoom = "1";
+    };
   }, []);
   const [flashLayers, setFlashLayers] = useState(0);
   const [flashKey, setFlashKey] = useState(0);
@@ -235,19 +231,9 @@ function KistView() {
 
   const triggerSizeUpgrade = (newSize: Exclude<ChestSize, "small">) => {
     setChestSize(newSize);
-    const range = maxScaleRef.current - startScaleRef.current;
-    if (newSize === "medium")
-      setScale((prev) =>
-        Math.max(prev, startScaleRef.current + range * 0.4),
-      );
-    else if (newSize === "large")
-      setScale((prev) =>
-        Math.max(prev, startScaleRef.current + range * 0.7),
-      );
-    else if (newSize === "mega")
-      setScale((prev) =>
-        Math.max(prev, startScaleRef.current + range * 0.9),
-      );
+    if (newSize === "medium") setZoom((prev) => Math.min(prev, 0.85));
+    else if (newSize === "large") setZoom((prev) => Math.min(prev, 0.7));
+    else if (newSize === "mega") setZoom((prev) => Math.min(prev, 0.55));
     setRingKey((k) => k + 1);
     setPopup(POPUP_SPEC[newSize]);
     setPopupKey((k) => k + 1);
@@ -317,11 +303,7 @@ function KistView() {
     setShakeKey((k) => k + 1);
     const next = tapCount + 1;
     setTapCount(next);
-    setScale((prev) => {
-      const range = maxScaleRef.current - startScaleRef.current;
-      const stap = range / thresholds.open;
-      return Math.min(prev + stap, maxScaleRef.current);
-    });
+    setZoom((prev) => Math.max(prev - 0.02, 0.5));
 
     const freq = Math.min(800, 300 + next * 40);
     playSound([{ freq, start: 0, gain: 0.15, duration: 0.1 }]);
@@ -367,7 +349,6 @@ function KistView() {
   };
 
   const progress = Math.min(1, tapCount / thresholds.open);
-  const currentScale = scale;
   const glowAlpha = Math.min(
     0.06 + 0.25 * (tapCount / thresholds.open),
     0.31,
@@ -516,9 +497,7 @@ function KistView() {
           position: "fixed",
           top: "45%",
           left: "50%",
-          transform: `translate(-50%, -50%) scale(${currentScale})`,
-          transformOrigin: "center center",
-          transition: "transform 200ms ease-out",
+          transform: "translate(-50%, -50%)",
           overflow: "visible",
           display: "flex",
           flexDirection: "row",
