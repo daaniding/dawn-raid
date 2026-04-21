@@ -664,7 +664,7 @@ function KistView() {
             }}
             className="font-cinzel select-none"
             style={{
-              marginTop: 20,
+              marginTop: -20,
               width: "calc(100% - 32px)",
               maxWidth: 380,
               height: 60,
