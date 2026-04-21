@@ -110,6 +110,26 @@ export default function HeldenPage() {
     const j = await r.json();
     if (j.state) {
       setState((prev) => ({ ...prev, [kaartId]: j.state }));
+      // XP voor upgrade
+      fetch("/api/xp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          amount: 20,
+          bron: "kaart_upgrade",
+        }),
+      })
+        .then((res) => res.json())
+        .then((xp) => {
+          if (xp?.levelUp) {
+            window.localStorage.setItem(
+              "dawnraid:pendingLevelUp",
+              JSON.stringify(xp),
+            );
+          }
+        })
+        .catch(() => {});
     }
   };
 

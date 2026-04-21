@@ -9,6 +9,7 @@ import {
   type ChestType,
 } from "@/components/kist/itemSets";
 import { rollRewards, type Reward } from "@/lib/kaarten";
+import { XP_BRONNEN, type XpBron } from "@/lib/levels";
 import { getOrCreateUserId } from "@/lib/userId";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -255,6 +256,26 @@ function KistView() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, rewards }),
       }).catch(() => {});
+
+      const xpBron = `kist_${typeParam}_${chestSize}` as XpBron;
+      const xpAmount = XP_BRONNEN[xpBron] ?? 0;
+      if (xpAmount > 0) {
+        fetch("/api/xp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId, amount: xpAmount, bron: xpBron }),
+        })
+          .then((r) => r.json())
+          .then((j) => {
+            if (j?.levelUp) {
+              window.localStorage.setItem(
+                "dawnraid:pendingLevelUp",
+                JSON.stringify(j),
+              );
+            }
+          })
+          .catch(() => {});
+      }
     }
     setPhase("opening");
     setBigShake(true);
@@ -512,10 +533,11 @@ function KistView() {
               key={popupKey}
               className="font-cinzel"
               style={{
-                position: "absolute",
-                top: -30,
-                left: "60%",
-                transform: "translateX(-50%)",
+                position: "fixed",
+                top: "calc(50% - 180px)",
+                left: 0,
+                right: 0,
+                textAlign: "center",
                 fontSize: popup.size,
                 fontWeight: 700,
                 color: popup.color,
@@ -526,7 +548,7 @@ function KistView() {
                 animation: popup.mega
                   ? "popup-mega 600ms ease-out forwards"
                   : "popup-text 900ms ease-out forwards",
-                zIndex: 3,
+                zIndex: 30,
               }}
             >
               {popup.text}
@@ -554,21 +576,19 @@ function KistView() {
           )}
       </div>
 
-      {/* UI container: onder de chest */}
+      {/* UI container: onder de chest, gecentreerd */}
       <div
         style={{
           position: "fixed",
-          top: "70%",
-          left: "50%",
-          transform: "translate(-50%, 0)",
+          top: "calc(50% + 140px)",
+          left: 0,
+          right: 0,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
           gap: 20,
           zIndex: 10,
           pointerEvents: "none",
-          width: "100%",
-          maxWidth: 430,
           padding: "0 12px",
         }}
       >

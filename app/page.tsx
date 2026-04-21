@@ -9,6 +9,7 @@ import TabBar from "@/components/home/TabBar";
 import VillageSilhouette from "@/components/home/VillageSilhouette";
 import DagelijksOpdracht from "@/components/modals/DagelijksOpdracht";
 import DebugResetButton from "@/components/home/DebugResetButton";
+import LevelUpWatcher from "@/components/home/LevelUpWatcher";
 
 export default function Home() {
   return (
@@ -56,6 +57,7 @@ export default function Home() {
         <TabBar />
         <DagelijksOpdracht />
         <DebugResetButton />
+        <LevelUpWatcher />
       </div>
     </div>
   );

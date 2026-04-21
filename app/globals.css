@@ -481,3 +481,8 @@ html, body {
   70%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   100% { opacity: 0; transform: translate(-50%, -50%) scale(1.1); }
 }
+
+@keyframes xpFill {
+  from { width: 0; }
+  to   { width: 100%; }
+}

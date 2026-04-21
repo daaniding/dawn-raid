@@ -271,10 +271,11 @@ export default function RewardReveal({ rewards, onDoorgaan }: Props) {
       <div
         style={{
           position: "fixed",
-          bottom: 120,
-          left: "50%",
-          transform: "translateX(-50%)",
+          bottom: 100,
+          left: 0,
+          right: 0,
           display: "flex",
+          justifyContent: "center",
           gap: 12,
           alignItems: "center",
           zIndex: 103,
@@ -317,9 +318,10 @@ export default function RewardReveal({ rewards, onDoorgaan }: Props) {
         <div
           style={{
             position: "fixed",
-            bottom: 160,
-            left: "50%",
-            transform: "translateX(-50%)",
+            bottom: 140,
+            left: 0,
+            right: 0,
+            textAlign: "center",
             color: "#C4A882",
             fontSize: 11,
             letterSpacing: "2px",
@@ -727,9 +729,12 @@ function Samenvatting({
         onClick={onDoorgaan}
         className="font-cinzel"
         style={{
-          marginTop: 28,
-          width: "calc(100% - 32px)",
+          position: "fixed",
+          bottom: 24,
+          left: 16,
+          right: 16,
           maxWidth: 360,
+          marginInline: "auto",
           height: 56,
           borderRadius: 14,
           border: "none",

@@ -195,6 +195,49 @@ function TimerView() {
           ? "epic"
           : fallback;
     setVoltooidOpdracht({ datum: dagSleutel(new Date()), titel: name });
+
+    // XP voor opdracht
+    try {
+      const userId = window.localStorage.getItem("dawnraid:userId");
+      if (userId) {
+        const xpKey =
+          mins >= 60
+            ? 60
+            : mins >= 30
+              ? 30
+              : mins >= 15
+                ? 15
+                : 5;
+        const xpMap: Record<number, number> = {
+          5: 25,
+          15: 50,
+          30: 100,
+          60: 200,
+        };
+        fetch("/api/xp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId,
+            amount: xpMap[xpKey],
+            bron: `opdracht_${xpKey}min`,
+          }),
+        })
+          .then((r) => r.json())
+          .then((j) => {
+            if (j?.levelUp) {
+              window.localStorage.setItem(
+                "dawnraid:pendingLevelUp",
+                JSON.stringify(j),
+              );
+            }
+          })
+          .catch(() => {});
+      }
+    } catch {
+      /* ignore */
+    }
+
     setTimeout(() => {
       router.push(`/kist?type=${chestType}`);
     }, 2000);
