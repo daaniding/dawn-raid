@@ -8,6 +8,7 @@ import StartButton from "@/components/home/StartButton";
 import TabBar from "@/components/home/TabBar";
 import VillageSilhouette from "@/components/home/VillageSilhouette";
 import DagelijksOpdracht from "@/components/modals/DagelijksOpdracht";
+import DebugResetButton from "@/components/home/DebugResetButton";
 
 export default function Home() {
   return (
@@ -54,6 +55,7 @@ export default function Home() {
         <FloatingButtons />
         <TabBar />
         <DagelijksOpdracht />
+        <DebugResetButton />
       </div>
     </div>
   );
