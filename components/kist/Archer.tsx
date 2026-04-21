@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface ArcherProps {
   isAttacking: boolean;
@@ -10,43 +10,42 @@ interface ArcherProps {
 
 const ATTACK_FRAMES = 16;
 const ATTACK_FRAME_MS = 80;
-const ATTACK_DURATION_MS = ATTACK_FRAMES * ATTACK_FRAME_MS;
 const ARROW_RELEASE_FRAME = 8;
 const FRAME_PX = 192;
+const SHEET_W = ATTACK_FRAMES * FRAME_PX; // 3072
 
-const SHEET_ATTACK =
+const SHEET =
   "/assets/heroes/archer/Spritesheets/archer_attack_arrow_basic-Sheet.png";
-const SHEET_IDLE = "/assets/heroes/archer/archer_idle.png";
 
 export default function Archer({
   isAttacking,
   onAttackComplete,
   onArrowImpact,
 }: ArcherProps) {
-  const impactTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const completeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Preload attack sheet once so the first frame is never blank.
-  useEffect(() => {
-    const img = new Image();
-    img.src = SHEET_ATTACK;
-  }, []);
+  const [frame, setFrame] = useState(0);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    if (impactTimerRef.current) clearTimeout(impactTimerRef.current);
-    if (completeTimerRef.current) clearTimeout(completeTimerRef.current);
-    if (!isAttacking) return;
-    impactTimerRef.current = setTimeout(
-      onArrowImpact,
-      ARROW_RELEASE_FRAME * ATTACK_FRAME_MS,
-    );
-    completeTimerRef.current = setTimeout(
-      onAttackComplete,
-      ATTACK_DURATION_MS,
-    );
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (!isAttacking) {
+      setFrame(0);
+      return;
+    }
+    let f = 0;
+    setFrame(0);
+    intervalRef.current = setInterval(() => {
+      f += 1;
+      if (f === ARROW_RELEASE_FRAME) onArrowImpact();
+      if (f >= ATTACK_FRAMES) {
+        if (intervalRef.current) clearInterval(intervalRef.current);
+        setFrame(0);
+        onAttackComplete();
+        return;
+      }
+      setFrame(f);
+    }, ATTACK_FRAME_MS);
     return () => {
-      if (impactTimerRef.current) clearTimeout(impactTimerRef.current);
-      if (completeTimerRef.current) clearTimeout(completeTimerRef.current);
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAttacking]);
@@ -58,18 +57,13 @@ export default function Archer({
       style={{
         width: FRAME_PX,
         height: FRAME_PX,
-        backgroundImage: `url('${isAttacking ? SHEET_ATTACK : SHEET_IDLE}')`,
-        backgroundSize: isAttacking
-          ? `${ATTACK_FRAMES * FRAME_PX}px ${FRAME_PX}px`
-          : `${FRAME_PX}px ${FRAME_PX}px`,
+        backgroundImage: `url('${SHEET}')`,
+        backgroundSize: `${SHEET_W}px ${FRAME_PX}px`,
+        backgroundPosition: `${-frame * FRAME_PX}px 0px`,
         backgroundRepeat: "no-repeat",
-        backgroundPosition: "0px 0px",
         imageRendering: "pixelated",
         flexShrink: 0,
         alignSelf: "flex-end",
-        animation: isAttacking
-          ? `archer-attack ${ATTACK_DURATION_MS}ms steps(${ATTACK_FRAMES}) forwards`
-          : "none",
         filter: isAttacking
           ? undefined
           : "drop-shadow(0 0 8px rgba(100,200,100,0.4))",
