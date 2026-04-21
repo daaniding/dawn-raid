@@ -5,6 +5,8 @@ import {
   CoinsIcon,
   CrossedSwordsIcon,
 } from "@/components/ui/GameIcon";
+import { setVoltooidOpdracht } from "@/lib/huidigeOpdracht";
+import { dagSleutel } from "@/lib/opdrachten";
 import { getOrCreateUserId } from "@/lib/userId";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
@@ -192,6 +194,7 @@ function TimerView() {
         : explicit === "gold"
           ? "epic"
           : fallback;
+    setVoltooidOpdracht({ datum: dagSleutel(new Date()), titel: name });
     setTimeout(() => {
       router.push(`/kist?type=${chestType}`);
     }, 2000);

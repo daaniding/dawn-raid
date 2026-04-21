@@ -1,6 +1,9 @@
 "use client";
 
-import { clearHuidigeOpdracht } from "@/lib/huidigeOpdracht";
+import {
+  clearHuidigeOpdracht,
+  clearVoltooidOpdracht,
+} from "@/lib/huidigeOpdracht";
 import { getOrCreateUserId } from "@/lib/userId";
 import { useEffect, useState } from "react";
 
@@ -28,6 +31,7 @@ export default function DebugResetButton() {
         { cache: "no-store" },
       );
       clearHuidigeOpdracht();
+      clearVoltooidOpdracht();
       window.location.reload();
     } catch {
       setBezig(false);

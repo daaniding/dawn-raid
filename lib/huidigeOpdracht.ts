@@ -40,3 +40,40 @@ export function clearHuidigeOpdracht() {
   window.localStorage.removeItem(KEY);
   window.dispatchEvent(new Event(OPDRACHT_EVENT));
 }
+
+const VOLTOOID_KEY = "dawnraid:opdrachtvoltooid";
+
+export type VoltooidOpdracht = {
+  datum: string;
+  titel: string;
+};
+
+export function getVoltooidOpdracht(): VoltooidOpdracht | null {
+  if (typeof window === "undefined") return null;
+  const raw = window.localStorage.getItem(VOLTOOID_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as VoltooidOpdracht;
+  } catch {
+    window.localStorage.removeItem(VOLTOOID_KEY);
+    return null;
+  }
+}
+
+export function setVoltooidOpdracht(v: VoltooidOpdracht) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(VOLTOOID_KEY, JSON.stringify(v));
+  window.dispatchEvent(new Event(OPDRACHT_EVENT));
+}
+
+export function clearVoltooidOpdracht() {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(VOLTOOID_KEY);
+  window.dispatchEvent(new Event(OPDRACHT_EVENT));
+}
+
+export function isVandaagVoltooid(): boolean {
+  const v = getVoltooidOpdracht();
+  if (!v) return false;
+  return v.datum === dagSleutel(new Date());
+}

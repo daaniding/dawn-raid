@@ -3,6 +3,7 @@
 import { CoinsIcon, CrossedSwordsIcon } from "@/components/ui/GameIcon";
 import {
   getHuidigeOpdracht,
+  isVandaagVoltooid,
   OPDRACHT_EVENT,
   type HuidigeOpdracht,
 } from "@/lib/huidigeOpdracht";
@@ -10,9 +11,13 @@ import { useEffect, useState } from "react";
 
 export default function QuestCard() {
   const [op, setOp] = useState<HuidigeOpdracht | null>(null);
+  const [voltooid, setVoltooid] = useState(false);
 
   useEffect(() => {
-    const sync = () => setOp(getHuidigeOpdracht());
+    const sync = () => {
+      setOp(getHuidigeOpdracht());
+      setVoltooid(isVandaagVoltooid());
+    };
     sync();
     window.addEventListener(OPDRACHT_EVENT, sync);
     window.addEventListener("storage", sync);
@@ -41,6 +46,7 @@ export default function QuestCard() {
       <div
         className="flex items-center gap-4"
         style={{
+          position: "relative",
           width: "calc(100% - 32px)",
           maxWidth: 380,
           padding: 20,
@@ -52,6 +58,26 @@ export default function QuestCard() {
             "0 0 20px rgba(255, 179, 71, 0.15), inset 0 1px 0 rgba(255, 179, 71, 0.1)",
         }}
       >
+        {voltooid && (
+          <span
+            className="font-cinzel"
+            style={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              background: "rgba(76,175,80,0.2)",
+              border: "1px solid #4CAF50",
+              color: "#4CAF50",
+              fontSize: 11,
+              fontWeight: 700,
+              letterSpacing: "1px",
+              padding: "4px 10px",
+              borderRadius: 20,
+            }}
+          >
+            ✓ VOLTOOID
+          </span>
+        )}
         <div
           className="flex items-center justify-center shrink-0"
           style={{
