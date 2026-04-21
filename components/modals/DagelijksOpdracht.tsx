@@ -12,31 +12,30 @@ import { useEffect, useMemo, useState } from "react";
 const CATEGORIE_KLEUR: Record<Opdracht["categorie"], string> = {
   fysiek: "#4CAF50",
   comfortzone: "#E74C3C",
-  productiviteit: "#4A90D9",
-  creativiteit: "#9B59B6",
+  leren: "#4A90D9",
+  creatief: "#9B59B6",
 };
 
 const CATEGORIE_BORDER: Record<Opdracht["categorie"], string> = {
   fysiek: "rgba(76,175,80,0.4)",
   comfortzone: "rgba(231,76,60,0.4)",
-  productiviteit: "rgba(74,144,217,0.4)",
-  creativiteit: "rgba(155,89,182,0.4)",
+  leren: "rgba(74,144,217,0.4)",
+  creatief: "rgba(155,89,182,0.4)",
 };
 
 const CATEGORIE_LABEL: Record<Opdracht["categorie"], string> = {
   fysiek: "FYSIEK",
   comfortzone: "COMFORT ZONE",
-  productiviteit: "PRODUCTIVITEIT",
-  creativiteit: "CREATIVITEIT",
+  leren: "LEREN",
+  creatief: "CREATIEF",
 };
 
-const REWARD_PER_DUUR: Record<5 | 15 | 30 | 60, "bronze" | "silver" | "gold"> =
-  {
-    5: "bronze",
-    15: "bronze",
-    30: "silver",
-    60: "gold",
-  };
+const CHEST_PER_DUUR: Record<5 | 15 | 30 | 60, "bronze" | "silver" | "epic"> = {
+  5: "bronze",
+  15: "bronze",
+  30: "silver",
+  60: "epic",
+};
 
 function vandaagDatumNL(d: Date): string {
   return d.toLocaleDateString("nl-NL", {
@@ -47,6 +46,8 @@ function vandaagDatumNL(d: Date): string {
   });
 }
 
+type Wissel = Record<5 | 15 | 30 | 60, boolean>;
+
 export default function DagelijksOpdracht() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -55,11 +56,21 @@ export default function DagelijksOpdracht() {
 
   const today = useMemo(() => new Date(), []);
   const datum = useMemo(() => dagSleutel(today), [today]);
-  const opdrachten = useMemo(() => getOpdrachtenVoorDag(today), [today]);
-  const lijst: Opdracht[] = useMemo(
-    () => [opdrachten.snel, opdrachten.kort, opdrachten.middel, opdrachten.lang],
-    [opdrachten],
-  );
+  const initieel = useMemo(() => getOpdrachtenVoorDag(today), [today]);
+
+  const [kaarten, setKaarten] = useState<Opdracht[]>(() => [
+    initieel.snel,
+    initieel.kort,
+    initieel.middel,
+    initieel.lang,
+  ]);
+  const [wisselUsed, setWisselUsed] = useState<Wissel>({
+    5: false,
+    15: false,
+    30: false,
+    60: false,
+  });
+  const [wisselBezig, setWisselBezig] = useState<number | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -67,15 +78,20 @@ export default function DagelijksOpdracht() {
       try {
         const userId = getOrCreateUserId();
         if (!userId) return;
-        const res = await fetch(
-          `/api/dagelijkseopdracht?userId=${encodeURIComponent(userId)}&datum=${datum}`,
-          { cache: "no-store" },
-        );
-        const data = await res.json();
+        const [picked, swaps] = await Promise.all([
+          fetch(
+            `/api/dagelijkseopdracht?userId=${encodeURIComponent(userId)}&datum=${datum}`,
+            { cache: "no-store" },
+          ).then((r) => r.json()),
+          fetch(
+            `/api/dagelijkseopdracht/wissel?userId=${encodeURIComponent(userId)}&datum=${datum}`,
+            { cache: "no-store" },
+          ).then((r) => r.json()),
+        ]);
         if (cancelled) return;
-        if (!data?.opdracht) setOpen(true);
+        if (!picked?.opdracht) setOpen(true);
+        if (swaps?.used) setWisselUsed(swaps.used as Wissel);
       } catch {
-        // network/down: still show modal so user can pick
         if (!cancelled) setOpen(true);
       } finally {
         if (!cancelled) setChecked(true);
@@ -100,16 +116,52 @@ export default function DagelijksOpdracht() {
         }),
       });
     } catch {
-      /* offline-fallback: still navigate */
+      /* offline-fallback */
     }
     setOpen(false);
     const params = new URLSearchParams({
       duration: String(op.duur * 60),
       name: op.titel,
-      reward: REWARD_PER_DUUR[op.duur],
+      chestType: CHEST_PER_DUUR[op.duur],
+      reward: CHEST_PER_DUUR[op.duur],
       opdracht: String(op.id),
     });
     router.push(`/timer?${params.toString()}`);
+  };
+
+  const wissel = async (op: Opdracht, idx: number) => {
+    if (wisselUsed[op.duur] || wisselBezig === op.id) return;
+    setWisselBezig(op.id);
+    try {
+      const userId = getOrCreateUserId();
+      const res = await fetch("/api/dagelijkseopdracht/wissel", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          datum,
+          duur: op.duur,
+          huidigId: op.id,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.opdracht) {
+          setKaarten((prev) => {
+            const copy = [...prev];
+            copy[idx] = data.opdracht as Opdracht;
+            return copy;
+          });
+          setWisselUsed((prev) => ({ ...prev, [op.duur]: true }));
+        }
+      } else if (res.status === 403) {
+        setWisselUsed((prev) => ({ ...prev, [op.duur]: true }));
+      }
+    } catch {
+      /* swallow */
+    } finally {
+      setWisselBezig(null);
+    }
   };
 
   if (!checked || !open) return null;
@@ -174,100 +226,136 @@ export default function DagelijksOpdracht() {
             marginTop: 8,
           }}
         >
-          {lijst.map((op) => {
+          {kaarten.map((op, idx) => {
             const cKleur = CATEGORIE_KLEUR[op.categorie];
             const cBorder = CATEGORIE_BORDER[op.categorie];
             const isHover = hoverId === op.id;
+            const wisselDisabled =
+              wisselUsed[op.duur] || wisselBezig === op.id;
             return (
-              <button
-                key={op.id}
-                type="button"
-                onClick={() => kies(op)}
-                onMouseEnter={() => setHoverId(op.id)}
-                onMouseLeave={() => setHoverId(null)}
-                onTouchStart={() => setHoverId(op.id)}
-                onTouchEnd={() => setHoverId(null)}
-                style={{
-                  textAlign: "left",
-                  background: "var(--bg-light, #2d1a00)",
-                  border: `1.5px solid ${isHover ? cKleur : cBorder}`,
-                  borderRadius: 16,
-                  padding: 16,
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 8,
-                  cursor: "pointer",
-                  transform: isHover ? "scale(1.02)" : "scale(1)",
-                  transition:
-                    "transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease",
-                  boxShadow: isHover
-                    ? `0 0 18px ${cBorder}`
-                    : "inset 0 1px 0 rgba(255,255,255,0.04)",
-                  color: "inherit",
-                  width: "100%",
-                }}
+              <div
+                key={`${op.duur}-${op.id}`}
+                style={{ position: "relative", width: "100%" }}
               >
-                <div
+                <button
+                  type="button"
+                  onClick={() => kies(op)}
+                  onMouseEnter={() => setHoverId(op.id)}
+                  onMouseLeave={() => setHoverId(null)}
+                  onTouchStart={() => setHoverId(op.id)}
+                  onTouchEnd={() => setHoverId(null)}
                   style={{
+                    textAlign: "left",
+                    background: "var(--bg-light, #2d1a00)",
+                    border: `1.5px solid ${isHover ? cKleur : cBorder}`,
+                    borderRadius: 16,
+                    padding: 16,
+                    paddingBottom: 36,
                     display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
+                    flexDirection: "column",
+                    gap: 8,
+                    cursor: "pointer",
+                    transform: isHover ? "scale(1.02)" : "scale(1)",
+                    transition:
+                      "transform 200ms ease, border-color 200ms ease, box-shadow 200ms ease",
+                    boxShadow: isHover
+                      ? `0 0 18px ${cBorder}`
+                      : "inset 0 1px 0 rgba(255,255,255,0.04)",
+                    color: "inherit",
+                    width: "100%",
                   }}
                 >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                    }}
+                  >
+                    <span
+                      className="font-cinzel"
+                      style={{
+                        background: "rgba(255,215,0,0.15)",
+                        border: "1px solid #FFD700",
+                        color: "#FFD700",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        letterSpacing: "1px",
+                        padding: "4px 10px",
+                        borderRadius: 20,
+                      }}
+                    >
+                      {op.duur} MIN
+                    </span>
+                    <span
+                      className="font-cinzel"
+                      style={{
+                        background: "rgba(255,179,71,0.15)",
+                        border: "1px solid #FFB347",
+                        color: "#FFB347",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        letterSpacing: "1px",
+                        padding: "4px 10px",
+                        borderRadius: 20,
+                      }}
+                    >
+                      {op.coins} 🪙
+                    </span>
+                  </div>
                   <span
                     className="font-cinzel"
                     style={{
-                      background: "rgba(255,215,0,0.15)",
-                      border: "1px solid #FFD700",
-                      color: "#FFD700",
-                      fontSize: 11,
-                      fontWeight: 700,
-                      letterSpacing: "1px",
-                      padding: "4px 10px",
-                      borderRadius: 20,
+                      fontSize: 10,
+                      letterSpacing: "2px",
+                      color: cKleur,
+                      textTransform: "uppercase",
                     }}
                   >
-                    {op.duur} MIN
+                    {CATEGORIE_LABEL[op.categorie]}
                   </span>
                   <span
                     className="font-cinzel"
                     style={{
-                      background: "rgba(255,179,71,0.15)",
-                      border: "1px solid #FFB347",
-                      color: "#FFB347",
-                      fontSize: 11,
+                      fontSize: 15,
                       fontWeight: 700,
-                      letterSpacing: "1px",
-                      padding: "4px 10px",
-                      borderRadius: 20,
+                      color: "#FFF5E4",
+                      lineHeight: 1.4,
                     }}
                   >
-                    {op.coins} 🪙
+                    {op.titel}
                   </span>
-                </div>
-                <span
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    wissel(op, idx);
+                  }}
+                  disabled={wisselDisabled}
+                  title={
+                    wisselUsed[op.duur] ? "Al gewisseld vandaag" : undefined
+                  }
                   className="font-cinzel"
                   style={{
+                    position: "absolute",
+                    right: 12,
+                    bottom: 10,
+                    background: "transparent",
+                    border: `1px solid ${wisselDisabled ? "rgba(120,120,120,0.3)" : "rgba(196,168,130,0.3)"}`,
+                    borderRadius: 8,
+                    padding: "4px 8px",
                     fontSize: 10,
-                    letterSpacing: "2px",
-                    color: cKleur,
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {CATEGORIE_LABEL[op.categorie]}
-                </span>
-                <span
-                  className="font-cinzel"
-                  style={{
-                    fontSize: 15,
                     fontWeight: 700,
-                    color: "#FFF5E4",
-                    lineHeight: 1.4,
+                    letterSpacing: "1px",
+                    color: wisselDisabled ? "#6b6b6b" : "#C4A882",
+                    cursor: wisselDisabled ? "not-allowed" : "pointer",
+                    opacity: wisselBezig === op.id ? 0.6 : 1,
                   }}
                 >
-                  {op.titel}
-                </span>
-              </button>
+                  ↺ WISSEL
+                </button>
+              </div>
             );
           })}
         </div>

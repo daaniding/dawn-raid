@@ -20,6 +20,7 @@ const QUOTES = [
 const REWARDS: Record<string, { label: string }> = {
   bronze: { label: "Bronzen Kist" },
   silver: { label: "Zilveren Kist" },
+  epic: { label: "Gouden Kist" },
   gold: { label: "Gouden Kist" },
 };
 
@@ -94,11 +95,17 @@ function TimerView() {
     return Number.isFinite(raw) && raw > 0 ? raw : 30 * 60;
   }, [params]);
   const name = params.get("name") ?? "Focus & Conquer";
-  const rewardKey = (params.get("reward") ?? "silver").toLowerCase();
+  const chestParam = (
+    params.get("chestType") ??
+    params.get("reward") ??
+    "silver"
+  ).toLowerCase();
+  const rewardKey = chestParam in REWARDS ? chestParam : "silver";
   const reward = REWARDS[rewardKey] ?? REWARDS.silver;
   const rewardCoins = {
     bronze: 50,
     silver: 150,
+    epic: 400,
     gold: 400,
   }[rewardKey] ?? 150;
 
@@ -176,10 +183,15 @@ function TimerView() {
     setIsCompleted(true);
     playSuccessSound();
     patchStatus("completed");
-    // Map timer duration to chest tier
+    const explicit = (params.get("chestType") ?? params.get("reward") ?? "").toLowerCase();
     const mins = Math.round(duration / 60);
+    const fallback = mins >= 60 ? "epic" : mins >= 30 ? "silver" : "bronze";
     const chestType =
-      mins >= 60 ? "epic" : mins >= 30 ? "silver" : "bronze";
+      explicit === "bronze" || explicit === "silver" || explicit === "epic"
+        ? explicit
+        : explicit === "gold"
+          ? "epic"
+          : fallback;
     setTimeout(() => {
       router.push(`/kist?type=${chestType}`);
     }, 2000);
@@ -426,6 +438,46 @@ function TimerView() {
               {percentCompleted}% voltooid
             </span>
           </div>
+        </div>
+
+        {/* Huidige opdracht subtitel */}
+        <div
+          style={{
+            marginTop: 16,
+            padding: "0 24px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 4,
+            maxWidth: 430,
+          }}
+        >
+          <span
+            className="font-cinzel"
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              letterSpacing: "2px",
+              color: "#C4A882",
+            }}
+          >
+            HUIDIGE OPDRACHT
+          </span>
+          <span
+            className="font-cinzel text-center"
+            style={{
+              fontSize: 16,
+              fontWeight: 700,
+              color: "#FFF5E4",
+              lineHeight: 1.3,
+              display: "-webkit-box",
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: "vertical",
+              overflow: "hidden",
+            }}
+          >
+            {name}
+          </span>
         </div>
 
         {/* Status */}
