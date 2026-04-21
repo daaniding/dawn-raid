@@ -5,8 +5,11 @@ import {
   getOpdrachtenVoorDag,
   type Opdracht,
 } from "@/lib/opdrachten";
+import {
+  getHuidigeOpdracht,
+  setHuidigeOpdracht,
+} from "@/lib/huidigeOpdracht";
 import { getOrCreateUserId } from "@/lib/userId";
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 const CATEGORIE_KLEUR: Record<Opdracht["categorie"], string> = {
@@ -49,7 +52,6 @@ function vandaagDatumNL(d: Date): string {
 type Wissel = Record<5 | 15 | 30 | 60, boolean>;
 
 export default function DagelijksOpdracht() {
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [checked, setChecked] = useState(false);
   const [hoverId, setHoverId] = useState<number | null>(null);
@@ -74,10 +76,14 @@ export default function DagelijksOpdracht() {
 
   useEffect(() => {
     let cancelled = false;
+    const lokaal = getHuidigeOpdracht();
     (async () => {
       try {
         const userId = getOrCreateUserId();
-        if (!userId) return;
+        if (!userId) {
+          if (!lokaal) setOpen(true);
+          return;
+        }
         const [picked, swaps] = await Promise.all([
           fetch(
             `/api/dagelijkseopdracht?userId=${encodeURIComponent(userId)}&datum=${datum}`,
@@ -89,10 +95,10 @@ export default function DagelijksOpdracht() {
           ).then((r) => r.json()),
         ]);
         if (cancelled) return;
-        if (!picked?.opdracht) setOpen(true);
+        if (!lokaal && !picked?.opdracht) setOpen(true);
         if (swaps?.used) setWisselUsed(swaps.used as Wissel);
       } catch {
-        if (!cancelled) setOpen(true);
+        if (!cancelled && !lokaal) setOpen(true);
       } finally {
         if (!cancelled) setChecked(true);
       }
@@ -104,6 +110,14 @@ export default function DagelijksOpdracht() {
 
   const kies = async (op: Opdracht) => {
     const userId = getOrCreateUserId();
+    setHuidigeOpdracht({
+      titel: op.titel,
+      duur: op.duur,
+      coins: op.coins,
+      chestType: CHEST_PER_DUUR[op.duur],
+      datum,
+    });
+    setOpen(false);
     try {
       await fetch("/api/dagelijkseopdracht", {
         method: "POST",
@@ -116,17 +130,8 @@ export default function DagelijksOpdracht() {
         }),
       });
     } catch {
-      /* offline-fallback */
+      /* offline-fallback: localStorage blijft */
     }
-    setOpen(false);
-    const params = new URLSearchParams({
-      duration: String(op.duur * 60),
-      name: op.titel,
-      chestType: CHEST_PER_DUUR[op.duur],
-      reward: CHEST_PER_DUUR[op.duur],
-      opdracht: String(op.id),
-    });
-    router.push(`/timer?${params.toString()}`);
   };
 
   const wissel = async (op: Opdracht, idx: number) => {

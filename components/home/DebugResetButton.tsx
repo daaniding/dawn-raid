@@ -1,5 +1,6 @@
 "use client";
 
+import { clearHuidigeOpdracht } from "@/lib/huidigeOpdracht";
 import { getOrCreateUserId } from "@/lib/userId";
 import { useEffect, useState } from "react";
 
@@ -26,6 +27,7 @@ export default function DebugResetButton() {
         `/api/debug/reset-dag?userId=${encodeURIComponent(userId)}&secret=debug123`,
         { cache: "no-store" },
       );
+      clearHuidigeOpdracht();
       window.location.reload();
     } catch {
       setBezig(false);
