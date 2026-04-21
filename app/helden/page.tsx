@@ -34,6 +34,18 @@ export default function HeldenPage() {
   const [state, setState] = useState<Record<string, KaartState>>({});
   const [filter, setFilter] = useState<Filter>("alles");
   const [sortering, setSortering] = useState<Sortering>("level");
+  const [sorteerRichting, setSorteerRichting] = useState<"asc" | "desc">(
+    "desc",
+  );
+
+  const handleSorteer = (optie: Sortering) => {
+    if (optie === sortering) {
+      setSorteerRichting((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortering(optie);
+      setSorteerRichting("desc");
+    }
+  };
   const [geselecteerd, setGeselecteerd] = useState<Kaart | null>(null);
   const [laden, setLaden] = useState(true);
 
@@ -64,25 +76,30 @@ export default function HeldenPage() {
     const ontgrendeld = (id: string) => (state[id]?.level ?? 0) > 0;
     const levelVan = (id: string) => state[id]?.level ?? 0;
 
+    const richting = sorteerRichting === "asc" ? -1 : 1;
+
     return basis.sort((a, b) => {
+      // Vergrendelde kaarten altijd onderaan, ongeacht richting
       const aU = ontgrendeld(a.id);
       const bU = ontgrendeld(b.id);
       if (aU && !bU) return -1;
       if (!aU && bU) return 1;
 
       if (sortering === "rarity") {
-        return RARITY_ORDE[a.rarity] - RARITY_ORDE[b.rarity];
+        return (RARITY_ORDE[a.rarity] - RARITY_ORDE[b.rarity]) * richting;
       }
       if (sortering === "type") {
-        if (a.type !== b.type) return a.type === "held" ? -1 : 1;
+        if (a.type === b.type) return 0;
+        // desc: helden eerst; asc: npcs eerst
+        return (a.type === "held" ? -1 : 1) * richting;
       }
       if (sortering === "naam") {
-        return a.naam.localeCompare(b.naam);
+        return a.naam.localeCompare(b.naam) * -richting;
       }
-      // level (default): hoog → laag
-      return levelVan(b.id) - levelVan(a.id);
+      // level: desc = hoog→laag, asc = laag→hoog
+      return (levelVan(b.id) - levelVan(a.id)) * richting;
     });
-  }, [filter, sortering, state]);
+  }, [filter, sortering, sorteerRichting, state]);
 
   const doeUpgrade = async (kaartId: string) => {
     const r = await fetch("/api/kaarten", {
@@ -206,7 +223,7 @@ export default function HeldenPage() {
           <button
             key={s}
             type="button"
-            onClick={() => setSortering(s)}
+            onClick={() => handleSorteer(s)}
             className="font-cinzel"
             style={{
               fontSize: 10,
@@ -219,9 +236,17 @@ export default function HeldenPage() {
               background: "transparent",
               cursor: "pointer",
               transition: "color 150ms, border-color 150ms",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
             }}
           >
             {s.toUpperCase()}
+            {sortering === s && (
+              <span style={{ fontSize: 10, lineHeight: 1 }}>
+                {sorteerRichting === "asc" ? "↑" : "↓"}
+              </span>
+            )}
           </button>
         ))}
       </div>
