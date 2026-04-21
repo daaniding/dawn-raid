@@ -7,6 +7,7 @@ import QuestCard from "@/components/home/QuestCard";
 import StartButton from "@/components/home/StartButton";
 import TabBar from "@/components/home/TabBar";
 import VillageSilhouette from "@/components/home/VillageSilhouette";
+import DagelijksOpdracht from "@/components/modals/DagelijksOpdracht";
 
 export default function Home() {
   return (
@@ -52,6 +53,7 @@ export default function Home() {
         <ChestSlots />
         <FloatingButtons />
         <TabBar />
+        <DagelijksOpdracht />
       </div>
     </div>
   );
