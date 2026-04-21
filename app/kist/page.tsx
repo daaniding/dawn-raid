@@ -154,18 +154,18 @@ function KistView() {
     const tierRoll = Math.random();
     let openAt: number;
     if (tierRoll < 0.78) {
-      openAt = Math.floor(Math.random() * 3) + 2;
+      openAt = Math.floor(Math.random() * 2) + 2;
     } else if (tierRoll < 0.91) {
-      openAt = Math.floor(Math.random() * 3) + 6;
+      openAt = Math.floor(Math.random() * 3) + 4;
     } else if (tierRoll < 0.97) {
-      openAt = Math.floor(Math.random() * 3) + 10;
+      openAt = Math.floor(Math.random() * 3) + 6;
     } else {
-      openAt = Math.floor(Math.random() * 2) + 14;
+      openAt = Math.floor(Math.random() * 3) + 8;
     }
     thresholdsRef.current = {
-      medium: openAt >= 6 ? Math.floor(openAt * 0.5) : null,
-      large: openAt >= 10 ? Math.floor(openAt * 0.7) : null,
-      mega: openAt >= 14 ? Math.floor(openAt * 0.88) : null,
+      medium: openAt >= 4 ? Math.floor(openAt * 0.5) : null,
+      large: openAt >= 6 ? Math.floor(openAt * 0.7) : null,
+      mega: openAt >= 8 ? Math.floor(openAt * 0.85) : null,
       open: openAt,
     };
   }
