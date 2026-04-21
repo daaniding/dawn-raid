@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { CSSProperties } from "react";
 
 interface ArcherProps {
   isAttacking: boolean;
@@ -9,13 +8,18 @@ interface ArcherProps {
   onArrowImpact: () => void;
 }
 
+const SCALE = 6;
+const SIZE = 32 * SCALE; // 192px
+const TOTAL_ATTACK_FRAMES = 8;
+const ARROW_RELEASE_FRAME = 4;
+
 export default function Archer({
   isAttacking,
   onAttackComplete,
   onArrowImpact,
 }: ArcherProps) {
-  const [frame, setFrame] = useState(0);
-  const [useAttackSheet, setUseAttackSheet] = useState(false);
+  const [attackFrame, setAttackFrame] = useState(0);
+  const [showAttack, setShowAttack] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -25,24 +29,26 @@ export default function Archer({
     }
 
     if (isAttacking) {
-      setUseAttackSheet(true);
-      setFrame(0);
       let f = 0;
+      setAttackFrame(0);
+      setShowAttack(true);
       intervalRef.current = setInterval(() => {
         f++;
-        setFrame(f);
-        if (f === 8) onArrowImpact();
-        if (f >= 15) {
+        setAttackFrame(f);
+        if (f === ARROW_RELEASE_FRAME) onArrowImpact();
+        if (f >= TOTAL_ATTACK_FRAMES - 1) {
           clearInterval(intervalRef.current!);
           intervalRef.current = null;
-          setFrame(0);
-          setUseAttackSheet(false);
-          onAttackComplete();
+          setTimeout(() => {
+            setShowAttack(false);
+            setAttackFrame(0);
+            onAttackComplete();
+          }, 80);
         }
       }, 80);
     } else {
-      setUseAttackSheet(false);
-      setFrame(0);
+      setShowAttack(false);
+      setAttackFrame(0);
     }
 
     return () => {
@@ -53,31 +59,53 @@ export default function Archer({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAttacking]);
 
-  const SCALE = 6;
-  const FRAME_SIZE = 32;
-  const RENDERED = FRAME_SIZE * SCALE; // 192px
+  const bgXAttack = `${(attackFrame / (TOTAL_ATTACK_FRAMES - 1)) * 100}%`;
 
-  const idleStyle: CSSProperties = {
-    width: RENDERED,
-    height: RENDERED,
-    backgroundImage: "url('/assets/heroes/archer/archer_idle.png')",
-    backgroundSize: "100% 100%",
-    backgroundRepeat: "no-repeat",
-    imageRendering: "pixelated",
-    flexShrink: 0,
-  };
+  return (
+    <div
+      style={{
+        width: SIZE,
+        height: SIZE,
+        position: "relative",
+        flexShrink: 0,
+        imageRendering: "pixelated",
+      }}
+    >
+      {/* Idle - altijd gerenderd, verborgen tijdens attack */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          backgroundImage: "url('/assets/heroes/archer/archer_idle.png')",
+          backgroundSize: "100% 100%",
+          backgroundRepeat: "no-repeat",
+          imageRendering: "pixelated",
+          opacity: showAttack ? 0 : 1,
+          filter: "drop-shadow(0 0 8px rgba(100,200,100,0.5))",
+        }}
+      />
 
-  const attackStyle: CSSProperties = {
-    width: RENDERED,
-    height: RENDERED,
-    backgroundImage:
-      "url('/assets/heroes/archer/Spritesheets/archer_attack_arrow_basic-Sheet.png')",
-    backgroundSize: "1600% 100%",
-    backgroundPosition: `${(frame / 15) * 100}% 0%`,
-    backgroundRepeat: "no-repeat",
-    imageRendering: "pixelated",
-    flexShrink: 0,
-  };
-
-  return <div style={useAttackSheet ? attackStyle : idleStyle} />;
+      {/* Attack - altijd gerenderd, verborgen tijdens idle */}
+      <div
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          width: "100%",
+          height: "100%",
+          backgroundImage:
+            "url('/assets/heroes/archer/Spritesheets/archer_attack_no_arrow-Sheet.png')",
+          backgroundSize: `${TOTAL_ATTACK_FRAMES * 100}% 100%`,
+          backgroundPosition: `${bgXAttack} 0%`,
+          backgroundRepeat: "no-repeat",
+          imageRendering: "pixelated",
+          opacity: showAttack ? 1 : 0,
+          filter: "drop-shadow(0 0 8px rgba(100,200,100,0.5))",
+        }}
+      />
+    </div>
+  );
 }
