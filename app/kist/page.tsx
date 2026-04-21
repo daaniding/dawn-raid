@@ -1,28 +1,14 @@
 "use client";
 
-import ChestItem from "@/components/kist/ChestItem";
 import ChestSprite from "@/components/kist/ChestSprite";
 import ExplosionParticles from "@/components/kist/ExplosionParticles";
+import RewardReveal from "@/components/kist/RewardReveal";
 import TapParticle from "@/components/kist/TapParticle";
-import { CoinsIcon } from "@/components/ui/GameIcon";
 import {
   type ChestSize,
   type ChestType,
 } from "@/components/kist/itemSets";
-import {
-  RARITY_COLORS,
-  rollRewards,
-  type Reward,
-  type Rarity as KaartRarity,
-} from "@/lib/kaarten";
-import type { Rarity as ItemRarity } from "@/components/kist/ChestItem";
-
-const RARITY_MAP: Record<KaartRarity, ItemRarity> = {
-  gewoon: "common",
-  zeldzaam: "rare",
-  episch: "epic",
-  legendarisch: "legendary",
-};
+import { rollRewards, type Reward } from "@/lib/kaarten";
 import { getOrCreateUserId } from "@/lib/userId";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -34,7 +20,7 @@ import {
   useState,
 } from "react";
 
-type Phase = "idle" | "tapping" | "opening" | "items" | "done";
+type Phase = "idle" | "tapping" | "opening" | "reveal" | "done";
 
 type ChestConfig = {
   label: string;
@@ -88,65 +74,6 @@ const SIZE_IDLE_MS: Record<ChestSize, number> = {
   mega: 120,
 };
 
-const RESOURCE_KLEUR: Record<string, string> = {
-  hout: "#A0522D",
-  steen: "#9E9E9E",
-  goud: "#FFD700",
-};
-
-const RESOURCE_LABEL: Record<string, string> = {
-  hout: "HOUT",
-  steen: "STEEN",
-  goud: "GOUD",
-};
-
-function rewardLabel(r: Reward): string {
-  if (r.type === "coins") return `+${r.amount} COINS`;
-  if (r.type === "resource")
-    return `+${r.amount} ${RESOURCE_LABEL[r.resource]}`;
-  return r.amount > 1
-    ? `+${r.amount} ${r.kaart.naam.toUpperCase()}`
-    : `+1 ${r.kaart.naam.toUpperCase()}`;
-}
-
-function rewardRarity(r: Reward): KaartRarity {
-  if (r.type === "kaart") return r.rarity;
-  if (r.type === "coins") return "episch";
-  if (r.resource === "goud") return "episch";
-  return "gewoon";
-}
-
-function rewardIcon(r: Reward): React.ReactNode {
-  if (r.type === "coins") return <CoinsIcon size={28} />;
-  if (r.type === "resource") {
-    return (
-      <div
-        aria-hidden
-        style={{
-          width: 28,
-          height: 28,
-          borderRadius: 6,
-          background: RESOURCE_KLEUR[r.resource],
-          boxShadow: `0 0 8px ${RESOURCE_KLEUR[r.resource]}88`,
-        }}
-      />
-    );
-  }
-  return (
-    <div
-      aria-hidden
-      style={{
-        width: 56,
-        height: 56,
-        backgroundImage: `url('${r.kaart.sprite}')`,
-        backgroundSize: "100% 100%",
-        backgroundRepeat: "no-repeat",
-        imageRendering: "pixelated",
-        filter: `drop-shadow(0 0 6px ${RARITY_COLORS[r.rarity].border}AA)`,
-      }}
-    />
-  );
-}
 
 const AMBIENT_PARTICLES = Array.from({ length: 8 }, (_, i) => ({
   size: 3 + ((i * 5) % 4),
@@ -190,8 +117,6 @@ function KistView() {
   const [flashLayers, setFlashLayers] = useState(0);
   const [flashKey, setFlashKey] = useState(0);
   const [screenShaking, setScreenShaking] = useState(false);
-  const [showItems, setShowItems] = useState(false);
-  const [showContinue, setShowContinue] = useState(false);
   const [showTapPrompt, setShowTapPrompt] = useState(false);
   const [ringKey, setRingKey] = useState(0);
   const [popup, setPopup] = useState<{
@@ -356,13 +281,8 @@ function KistView() {
     window.setTimeout(() => setBigShake(false), 600);
     window.setTimeout(() => setFlashLayers(0), 1000);
     window.setTimeout(() => {
-      setPhase("items");
-      setShowItems(true);
+      setPhase("reveal");
     }, 1200);
-    window.setTimeout(() => {
-      setShowContinue(true);
-      setPhase("done");
-    }, 2000 + rewards.length * 200);
   };
 
   const executeTap = () => {
@@ -419,7 +339,7 @@ function KistView() {
   const [finalRewards, setFinalRewards] = useState<Reward[]>([]);
 
   useLayoutEffect(() => {
-    if (phase !== "items" && phase !== "done") return;
+    if (phase !== "reveal" && phase !== "done") return;
     const id = window.setTimeout(() => {
       if (!chestStageRef.current) return;
       const chestRect = chestStageRef.current.getBoundingClientRect();
@@ -575,7 +495,7 @@ function KistView() {
         />
         <TapParticle color={chest.accent} burstKey={shakeKey} />
           <ExplosionParticles
-            active={phase === "opening" || phase === "items"}
+            active={phase === "opening" || phase === "reveal"}
             accentColor={chest.accent}
           />
 
@@ -673,93 +593,14 @@ function KistView() {
           </div>
         )}
 
-        {/* Items */}
-        {showItems && (
-          <div
-            className="flex flex-col items-center"
-            style={{
-              marginTop: 28,
-              width: "100%",
-              maxWidth: 420,
-              pointerEvents: "auto",
-            }}
-          >
-            <span
-              className="font-cinzel"
-              style={{
-                fontSize: 13,
-                fontWeight: 700,
-                letterSpacing: "3px",
-                color: "#C4A882",
-                marginBottom: 12,
-                animation: "slide-up 300ms ease-out both",
-              }}
-            >
-              JE HEBT ONTVANGEN
-            </span>
-            <div
-              className="flex w-full flex-wrap justify-center"
-              style={{ gap: 8 }}
-            >
-              {finalRewards.map((r, idx) => {
-                const off = itemOffsets[idx];
-                const kaartRarity = rewardRarity(r);
-                const itemRarity = RARITY_MAP[kaartRarity];
-                return (
-                  <ChestItem
-                    key={idx}
-                    innerRef={(el) => {
-                      itemRefs.current[idx] = el;
-                    }}
-                    icon={rewardIcon(r)}
-                    name={rewardLabel(r)}
-                    rarity={itemRarity}
-                    rainbow={itemRarity === "legendary"}
-                    delayMs={idx * 150}
-                    useFly={!!off}
-                    dx={off?.dx ?? 0}
-                    dy={off?.dy ?? 0}
-                    peak={finalSizeRef.current === "mega" ? 90 : 55}
-                  />
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {showContinue && (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              router.push("/");
-            }}
-            className="font-cinzel select-none"
-            style={{
-              marginTop: -20,
-              width: "calc(100% - 32px)",
-              maxWidth: 380,
-              height: 60,
-              borderRadius: 16,
-              border: "none",
-              background:
-                "linear-gradient(180deg, var(--amber) 0%, var(--red-action) 100%)",
-              color: "#FFF5E4",
-              fontSize: 22,
-              fontWeight: 900,
-              letterSpacing: "3px",
-              textShadow: "0 1px 2px rgba(0, 0, 0, 0.4)",
-              boxShadow:
-                "0 6px 0 #8B2500, 0 8px 20px rgba(192, 57, 43, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2)",
-              cursor: "pointer",
-              pointerEvents: "auto",
-              animation: "slide-up 300ms ease-out both",
-            }}
-          >
-            DOORGAAN
-          </button>
-        )}
       </div>
+
+      {phase === "reveal" && finalRewards.length > 0 && (
+        <RewardReveal
+          rewards={finalRewards}
+          onDoorgaan={() => router.push("/")}
+        />
+      )}
 
       {/* Flash overlays */}
       {flashLayers > 0 &&
