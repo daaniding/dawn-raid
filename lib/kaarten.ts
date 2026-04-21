@@ -197,3 +197,144 @@ export function kaartenNodigVoorLevel(
 export function getKaart(id: string): Kaart | undefined {
   return kaarten.find((k) => k.id === id);
 }
+
+// ─── Reward rolling ────────────────────────────────────────────────
+
+export type KistType = "bronze" | "silver" | "epic" | "legendary";
+export type KistSize = "small" | "medium" | "large" | "mega";
+export type ResourceType = "hout" | "steen" | "goud";
+
+export type Reward =
+  | { type: "coins"; amount: number }
+  | { type: "resource"; resource: ResourceType; amount: number }
+  | { type: "kaart"; kaart: Kaart; rarity: Rarity; amount: number };
+
+const SLOTS_PER_SIZE: Record<KistSize, number> = {
+  small: 3,
+  medium: 4,
+  large: 5,
+  mega: 6,
+};
+
+// [min, max] coin/resource amount per slot, per kist + size
+const COIN_RANGES: Record<KistType, Record<KistSize, [number, number]>> = {
+  bronze: {
+    small: [25, 50],
+    medium: [30, 60],
+    large: [40, 80],
+    mega: [60, 100],
+  },
+  silver: {
+    small: [50, 100],
+    medium: [75, 125],
+    large: [100, 175],
+    mega: [150, 250],
+  },
+  epic: {
+    small: [100, 200],
+    medium: [150, 275],
+    large: [200, 350],
+    mega: [300, 500],
+  },
+  legendary: {
+    small: [200, 400],
+    medium: [300, 550],
+    large: [400, 700],
+    mega: [600, 1000],
+  },
+};
+
+// Rarity kansen (percentages tellen op tot 100)
+type RarityOdds = Partial<Record<Rarity, number>>;
+const RARITY_ODDS: Record<KistType, Record<KistSize, RarityOdds>> = {
+  bronze: {
+    small: { gewoon: 80, zeldzaam: 20 },
+    medium: { gewoon: 70, zeldzaam: 28, episch: 2 },
+    large: { gewoon: 55, zeldzaam: 38, episch: 7 },
+    mega: { gewoon: 40, zeldzaam: 45, episch: 13, legendarisch: 2 },
+  },
+  silver: {
+    small: { gewoon: 50, zeldzaam: 45, episch: 5 },
+    medium: { gewoon: 30, zeldzaam: 50, episch: 18, legendarisch: 2 },
+    large: { gewoon: 15, zeldzaam: 50, episch: 30, legendarisch: 5 },
+    mega: { zeldzaam: 40, episch: 45, legendarisch: 15 },
+  },
+  epic: {
+    small: { gewoon: 10, zeldzaam: 40, episch: 45, legendarisch: 5 },
+    medium: { zeldzaam: 25, episch: 60, legendarisch: 15 },
+    large: { zeldzaam: 10, episch: 65, legendarisch: 25 },
+    mega: { episch: 60, legendarisch: 40 },
+  },
+  legendary: {
+    small: { zeldzaam: 10, episch: 50, legendarisch: 40 },
+    medium: { episch: 45, legendarisch: 55 },
+    large: { episch: 30, legendarisch: 70 },
+    mega: { episch: 10, legendarisch: 90 },
+  },
+};
+
+function rollCoinAmount(kistType: KistType, kistSize: KistSize): number {
+  const [min, max] = COIN_RANGES[kistType][kistSize];
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function rollRarity(kistType: KistType, kistSize: KistSize): Rarity {
+  const odds = RARITY_ODDS[kistType][kistSize];
+  const rand = Math.random() * 100;
+  let cum = 0;
+  for (const [rarity, kans] of Object.entries(odds) as [Rarity, number][]) {
+    cum += kans;
+    if (rand < cum) return rarity;
+  }
+  // Fallback (should be unreachable als odds optellen tot 100)
+  return "gewoon";
+}
+
+function combineerDuplicaten(rewards: Reward[]): Reward[] {
+  const gecombineerd: Reward[] = [];
+  for (const r of rewards) {
+    if (r.type === "kaart") {
+      const bestaand = gecombineerd.find(
+        (g) => g.type === "kaart" && g.kaart.id === r.kaart.id,
+      ) as Extract<Reward, { type: "kaart" }> | undefined;
+      if (bestaand) {
+        bestaand.amount += r.amount;
+        continue;
+      }
+    }
+    gecombineerd.push({ ...r });
+  }
+  return gecombineerd;
+}
+
+export function rollRewards(
+  kistType: KistType,
+  kistSize: KistSize,
+): Reward[] {
+  const slots = SLOTS_PER_SIZE[kistSize];
+  const resources: ResourceType[] = ["hout", "steen", "goud"];
+  const rewards: Reward[] = [];
+
+  for (let i = 0; i < slots; i++) {
+    const roll = Math.random();
+    if (roll < 0.4) {
+      rewards.push({
+        type: "coins",
+        amount: rollCoinAmount(kistType, kistSize),
+      });
+    } else if (roll < 0.75) {
+      rewards.push({
+        type: "resource",
+        resource: resources[Math.floor(Math.random() * resources.length)],
+        amount: rollCoinAmount(kistType, kistSize),
+      });
+    } else {
+      const rarity = rollRarity(kistType, kistSize);
+      const pool = kaarten.filter((k) => k.rarity === rarity);
+      const kaart = pool[Math.floor(Math.random() * pool.length)];
+      rewards.push({ type: "kaart", kaart, rarity, amount: 1 });
+    }
+  }
+
+  return combineerDuplicaten(rewards);
+}
